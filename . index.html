@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Hub Machines - Rent & Earn</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white">
+<header class="p-6 flex justify-between">
+  <h1 class="text-2xl font-bold">AI HUB MACHINES</h1>
+  <button class="bg-green-500 px-4 py-2 rounded">Login</button>
+</header>
+
+<section class="p-8 text-center">
+  <h2 class="text-4xl font-bold">Rent a Machine, Earn Daily</h2>
+  <p class="mt-4 text-gray-300">Registration: 10,000 UGX - Earn from real tasks</p>
+  <button class="mt-6 bg-green-500 px-8 py-3 rounded-full font-bold">Register Now - 10,000 UGX</button>
+</section>
+
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6 p-8" id="machines"></section>
+
+<script>
+const machines = [
+  {name:"Starter Bot", price:5500, daily:"50 tasks", earning:"300/day", days:30},
+  {name:"Growth Bot", price:10000, daily:"100 tasks", earning:"600/day", days:30},
+  {name:"Pro Bot", price:20000, daily:"250 tasks", earning:"1500/day", days:45},
+  {name:"Business Bot", price:40000, daily:"600 tasks", earning:"3500/day", days:60},
+  {name:"Enterprise Bot", price:60000, daily:"1000 tasks", earning:"6000/day", days:60},
+];
+document.getElementById('machines').innerHTML = machines.map(m=>`
+  <div class="bg-gray-800 p-6 rounded-2xl">
+    <h3 class="text-xl font-bold">${m.name}</h3>
+    <p class="text-3xl my-2">${m.price.toLocaleString()} UGX</p>
+    <p>${m.daily} | ${m.earning} | ${m.days} Days</p>
+    <p class="text-xs text-gray-400 mt-2">Earning based on tasks completed, not automatic doubling</p>
+    <button class="w-full bg-white text-black mt-4 py-2 rounded font-bold">Rent Machine</button>
+  </div>
+`).join('');
+</script>
+
+<div class="p-8 bg-gray-800 m-8 rounded-2xl">
+  <h3>Refer & Earn</h3>
+  <p>Share link: https://aihub.ug/r/yourname - Get 10% when friend rents. Withdrawable instantly after activation.</p>
+</div>
+</body>
+</html>
