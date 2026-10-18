@@ -1,47 +1,149 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Hub Machines - Rent & Earn</title>
+<title>AI HUB MACHINES</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-white">
-<header class="p-6 flex justify-between">
-  <h1 class="text-2xl font-bold">AI HUB MACHINES</h1>
-  <button class="bg-green-500 px-4 py-2 rounded">Login</button>
+<body class="bg-[#0f1219] text-white min-h-screen">
+<div class="max-w-6xl mx-auto p-4">
+<header class="flex justify-between items-center py-6">
+  <h1 class="text-2xl font-black">AI HUB // MACHINES</h1>
+  <div id="nav"></div>
 </header>
 
-<section class="p-8 text-center">
-  <h2 class="text-4xl font-bold">Rent a Machine, Earn Daily</h2>
-  <p class="mt-4 text-gray-300">Registration: 10,000 UGX - Earn from real tasks</p>
-  <button class="mt-6 bg-green-500 px-8 py-3 rounded-full font-bold">Register Now - 10,000 UGX</button>
-</section>
-
-<section class="grid grid-cols-1 md:grid-cols-3 gap-6 p-8" id="machines"></section>
+<div id="app"></div>
 
 <script>
-const machines = [
-  {name:"Starter Bot", price:5500, daily:"50 tasks", earning:"300/day", days:30},
-  {name:"Growth Bot", price:10000, daily:"100 tasks", earning:"600/day", days:30},
-  {name:"Pro Bot", price:20000, daily:"250 tasks", earning:"1500/day", days:45},
-  {name:"Business Bot", price:40000, daily:"600 tasks", earning:"3500/day", days:60},
-  {name:"Enterprise Bot", price:60000, daily:"1000 tasks", earning:"6000/day", days:60},
+// --- DATA ---
+const MACHINES = [
+  {id:1, name:"Starter AI", price:5500, perDay:300, days:30, tasks:"50/day"},
+  {id:2, name:"Writer AI", price:10000, perDay:600, days:30, tasks:"100/day"},
+  {id:3, name:"Pro AI", price:20000, perDay:1500, days:45, tasks:"250/day"},
+  {id:4, name:"Business AI", price:40000, perDay:3500, days:60, tasks:"600/day"},
+  {id:5, name:"Enterprise AI", price:60000, perDay:6000, days:60, tasks:"1000/day"},
 ];
-document.getElementById('machines').innerHTML = machines.map(m=>`
-  <div class="bg-gray-800 p-6 rounded-2xl">
-    <h3 class="text-xl font-bold">${m.name}</h3>
-    <p class="text-3xl my-2">${m.price.toLocaleString()} UGX</p>
-    <p>${m.daily} | ${m.earning} | ${m.days} Days</p>
-    <p class="text-xs text-gray-400 mt-2">Earning based on tasks completed, not automatic doubling</p>
-    <button class="w-full bg-white text-black mt-4 py-2 rounded font-bold">Rent Machine</button>
-  </div>
-`).join('');
-</script>
+let db = JSON.parse(localStorage.getItem('aihub_db')||'{"users":[],"current":null}');
+function save(){localStorage.setItem('aihub_db', JSON.stringify(db));}
+function hash(s){return btoa(s).split('').reverse().join('');} // demo only, use bcrypt on backend
 
-<div class="p-8 bg-gray-800 m-8 rounded-2xl">
-  <h3>Refer & Earn</h3>
-  <p>Share link: https://aihub.ug/r/yourname - Get 10% when friend rents. Withdrawable instantly after activation.</p>
+// --- RENDER ---
+function render(){
+  const u = db.current ? db.users.find(x=>x.id==db.current) : null;
+  document.getElementById('nav').innerHTML = u ? 
+    `<span class="mr-3">${u.phone}</span><button onclick="logout()" class="bg-gray-700 px-3 py-1 rounded">Logout</button> ${u.isAdmin?'<button onclick="showAdmin()" class="bg-yellow-500 text-black px-3 py-1 rounded ml-2">Admin</button>':''}` :
+    `<button onclick="showLogin()" class="bg-white text-black px-4 py-2 rounded-full font-bold">Login</button>`;
+
+  if(!u){ showLanding(); return; }
+  if(u.isAdmin && window.adminMode){ showAdminPanel(); return; }
+  
+  document.getElementById('app').innerHTML = `
+  <div class="grid md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-gray-800 p-5 rounded-2xl"><p class="text-gray-400">Wallet Balance</p><h2 class="text-3xl font-bold">${u.wallet.toLocaleString()} UGX</h2></div>
+    <div class="bg-gray-800 p-5 rounded-2xl"><p class="text-gray-400">Referral Bonus</p><h2 class="text-3xl font-bold text-green-400">${u.refBonus.toLocaleString()} UGX</h2><button onclick="withdrawBonus()" class="mt-2 bg-green-500 px-4 py-1 rounded text-sm">Withdraw Now</button></div>
+    <div class="bg-gray-800 p-5 rounded-2xl"><p class="text-gray-400">My Machines</p><h2 class="text-3xl font-bold">${u.machines.length}</h2><p class="text-xs mt-1">Earning ${u.machines.reduce((a,b)=>a+b.perDay,0)}/day from tasks</p></div>
+  </div>
+  <div class="bg-gray-800 p-4 rounded-2xl mb-6"><p>Your referral link:</p><code class="text-green-400">https://aihub.ug/r/${u.refCode}</code><p class="text-xs text-gray-400 mt-1">Earn 10% when friend rents a machine. Bonus withdrawable after friend activates.</p></div>
+  <h3 class="text-xl font-bold mb-3">Rent Machines</h3>
+  <div class="grid md:grid-cols-3 gap-4">
+    ${MACHINES.map(m=>`
+      <div class="bg-[#1a1e2c] p-5 rounded-2xl border border-gray-800">
+        <h4 class="font-bold text-lg">${m.name}</h4>
+        <p class="text-2xl font-black my-2">${m.price.toLocaleString()} UGX</p>
+        <p class="text-sm text-gray-400">${m.tasks} | ${m.perDay.toLocaleString()} UGX/day | ${m.days} days</p>
+        <p class="text-[11px] text-gray-500 mt-2">Earning based on tasks completed. No guaranteed doubling.</p>
+        <button onclick="buyMachine(${m.id})" class="w-full mt-4 bg-white text-black py-2 rounded-full font-bold">Rent Now - Pay via MoMo</button>
+      </div>
+    `).join('')}
+  </div>
+  `;
+}
+
+function showLanding(){
+  document.getElementById('app').innerHTML = `
+  <div class="text-center py-16">
+    <h2 class="text-5xl font-black leading-tight">RENT AI MACHINES<br><span class="text-green-400">EARN DAILY</span></h2>
+    <p class="mt-4 text-gray-400">Registration 10,000 UGX | Machines 5,500 - 60,000 | Real tasks, real earnings</p>
+    <button onclick="showRegister()" class="mt-8 bg-green-500 px-10 py-4 rounded-full font-black text-lg">REGISTER NOW - 10,000 UGX</button>
+    <p class="mt-3 text-xs text-gray-500">Pay via MTN MoMo Business / Flutterwave. Replace link in code.</p>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4">${MACHINES.map(m=>`<div class="bg-gray-800 p-4 rounded-xl"><b>${m.name}</b> - ${m.price.toLocaleString()} UGX</div>`).join('')}</div>
+  `;
+}
+function showRegister(){
+  document.getElementById('app').innerHTML = `
+  <div class="max-w-md mx-auto bg-gray-800 p-6 rounded-2xl">
+    <h3 class="text-xl font-bold mb-4">Create Account - 10,000 UGX Registration</h3>
+    <input id="phone" placeholder="Phone (07...)" class="w-full p-3 rounded bg-gray-900 mb-3">
+    <input id="pass" type="password" placeholder="Strong password (8+ chars, uppercase, number)" class="w-full p-3 rounded bg-gray-900 mb-3">
+    <input id="ref" placeholder="Referral code (optional)" class="w-full p-3 rounded bg-gray-900 mb-3">
+    <p class="text-xs text-gray-400 mb-3">Payment: You will be redirected to MoMo Pay 10,000 UGX. Demo: no real charge now.</p>
+    <button onclick="doRegister()" class="w-full bg-green-500 py-3 rounded-full font-bold">Pay 10,000 & Create Account</button>
+  </div>`;
+}
+function showLogin(){
+  document.getElementById('app').innerHTML = `
+  <div class="max-w-md mx-auto bg-gray-800 p-6 rounded-2xl">
+    <h3 class="text-xl font-bold mb-4">Login</h3>
+    <input id="lphone" placeholder="Phone" class="w-full p-3 rounded bg-gray-900 mb-3">
+    <input id="lpass" type="password" placeholder="Password" class="w-full p-3 rounded bg-gray-900 mb-3">
+    <button onclick="doLogin()" class="w-full bg-white text-black py-3 rounded-full font-bold">Login</button>
+    <p class="text-xs text-center mt-3"><a onclick="showRegister()" class="underline">Create account</a></p>
+  </div>`;
+}
+
+function doRegister(){
+  const phone=document.getElementById('phone').value, pass=document.getElementById('pass').value, ref=document.getElementById('ref').value;
+  if(!phone||pass.length<8||!/[A-Z]/.test(pass)||!/[0-9]/.test(pass)) return alert('Phone required & password must be 8+ chars with uppercase & number');
+  if(db.users.find(u=>u.phone==phone)) return alert('Account exists');
+  // PAYMENT PLACEHOLDER: Replace with Flutterwave link
+  // window.location.href = "https://flutterwave.com/pay/YOUR_LINK"
+  const id=Date.now();
+  const newUser={id, phone, passHash:hash(pass), wallet:0, refBonus:0, machines:[], refCode:phone.slice(-6)+Math.floor(Math.random()*99), isAdmin:db.users.length==0};
+  db.users.push(newUser);
+  if(ref){ const owner=db.users.find(u=>u.refCode==ref); if(owner){ owner.refBonus+=1000; owner.wallet+=1000; } }
+  db.current=id; save(); render(); alert('Account created! First account is Admin.');
+}
+function doLogin(){
+  const phone=document.getElementById('lphone').value, pass=document.getElementById('lpass').value;
+  const u=db.users.find(x=>x.phone==phone && x.passHash==hash(pass));
+  if(!u) return alert('Wrong phone or password');
+  db.current=u.id; save(); render();
+}
+function logout(){db.current=null; save(); render();}
+function buyMachine(id){
+  const u=db.users.find(x=>x.id==db.current);
+  const m=MACHINES.find(x=>x.id==id);
+  // PAYMENT PLACEHOLDER for machine
+  if(confirm(`Pay ${m.price} UGX via MoMo to rent ${m.name}? (Demo: will add to your account)`)){
+    u.machines.push({...m, start:Date.now()});
+    save(); render();
+  }
+}
+function withdrawBonus(){
+  const u=db.users.find(x=>x.id==db.current);
+  if(u.refBonus<1000) return alert('Min 1000 UGX to withdraw');
+  alert(`Withdrawal request ${u.refBonus} UGX sent to Admin for approval to MoMo ${u.phone}`);
+  u.wallet+=u.refBonus; u.refBonus=0; save(); render();
+}
+function showAdmin(){window.adminMode=true; render();}
+function showAdminPanel(){
+  document.getElementById('app').innerHTML = `
+  <h2 class="text-2xl font-bold mb-4">Admin Panel - Password Reset</h2>
+  <div class="bg-gray-800 p-4 rounded-xl">
+    ${db.users.map(u=>`<div class="flex justify-between py-2 border-b border-gray-700"><span>${u.phone} - ${u.wallet} UGX - ${u.machines.length} machines</span><button onclick="resetPass(${u.id})" class="bg-yellow-500 text-black px-3 py-1 rounded text-xs">Reset Password</button></div>`).join('')}
+  </div>
+  <button onclick="window.adminMode=false;render()" class="mt-4 bg-gray-700 px-4 py-2 rounded">Back to Dashboard</button>`;
+}
+function resetPass(id){
+  const newPass=prompt('Enter new temporary password for user:');
+  if(!newPass) return;
+  const u=db.users.find(x=>x.id==id);
+  u.passHash=hash(newPass); save(); alert('Password reset. Tell user: '+newPass);
+}
+render();
+</script>
 </div>
 </body>
 </html>
